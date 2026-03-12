@@ -3,6 +3,7 @@
 target/
 dbt_packages/
 logs/
+.user.yml
 
 # dbt profiles — jangan di-commit, simpan di ~/.dbt/profiles.yml
 profiles.yml

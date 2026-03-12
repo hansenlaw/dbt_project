@@ -34,13 +34,16 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   io_testing:
-    example:
-      +materialized: view
+    +tags: ['io_testing']
     marts:
       +materialized: table
+      +tags: ['mart']
       store:
         +schema: marts_store
+        +tags: ['store']
       sales:
         +schema: marts_sales
+        +tags: ['sales']
       customer:
         +schema: marts_customer
+        +tags: ['customer']

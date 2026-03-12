@@ -3,8 +3,84 @@ version: 2
 sources:
   - name: public
     schema: public
+    description: "Raw source tables loaded in monthly batches from the retail operational system."
+
     tables:
-      - name: src_store_detail
+
       - name: src_store
+        description: >
+          Batch-loaded store location data. Each batch represents one month of store snapshot data,
+          including stores that have been renamed. Store codes may change across batches —
+          latitude and longitude are used as the stable identity key in SCD2 logic.
+        loaded_at_field: partition_time
+        freshness:
+          warn_after: {count: 7, period: day}
+          error_after: {count: 14, period: day}
+        columns:
+          - name: store_code
+            description: "Store identifier at the time of this batch. May change across batches due to rebranding."
+          - name: latitude
+            description: "Geographic latitude of the store. Immutable — used as stable identity key in the SCD2 model."
+          - name: longitude
+            description: "Geographic longitude of the store. Immutable — used as stable identity key in the SCD2 model."
+          - name: partition_time
+            description: "Batch date for this record. Used to filter incremental loads and determine SCD2 effective dates."
+
+      - name: src_store_detail
+        description: "Supplementary store attribute data including name, city, and address. Sourced separately from location data."
+
       - name: src_sales
+        description: >
+          Batch-loaded sales transaction data. Each batch contains orders placed within a given date range.
+          The order_id is used as the deduplication key in the incremental fact_sales model.
+        loaded_at_field: partition_time
+        freshness:
+          warn_after: {count: 7, period: day}
+          error_after: {count: 14, period: day}
+        columns:
+          - name: order_id
+            description: "Unique identifier for each sales order. Used as the incremental deduplication key in fact_sales."
+          - name: store_code
+            description: "Store code at the time of the transaction. Joined to working_initial_store for stable identity resolution."
+          - name: customer_id
+            description: "Customer identifier. Permanent — does not change across batches."
+          - name: product_id
+            description: "Product identifier."
+          - name: order_date
+            description: "Date the order was placed."
+          - name: quantity
+            description: "Number of units sold in this transaction."
+          - name: unit_price
+            description: "Price per unit at the time of sale."
+          - name: total_amount
+            description: "Total transaction value (quantity × unit_price)."
+          - name: partition_time
+            description: "Batch date for this record. Used as the incremental filter in fact_sales."
+
       - name: src_customer
+        description: >
+          Batch-loaded customer profile data. Each batch may contain updated tier information
+          for existing customers. Tier changes are tracked over time via the dim_customer snapshot.
+        loaded_at_field: partition_time
+        freshness:
+          warn_after: {count: 7, period: day}
+          error_after: {count: 14, period: day}
+        columns:
+          - name: customer_id
+            description: "Customer identifier. Permanent — does not change."
+          - name: full_name
+            description: "Customer full name."
+          - name: email
+            description: "Customer email address."
+          - name: phone
+            description: "Customer phone number."
+          - name: city
+            description: "Customer city of residence."
+          - name: province
+            description: "Customer province of residence."
+          - name: tier
+            description: "Customer loyalty tier: Bronze, Silver, or Gold. May change across batches — tracked via the dim_customer snapshot."
+          - name: registration_date
+            description: "Date the customer first registered."
+          - name: partition_time
+            description: "Batch date for this record. Used as the incremental filter in the dim_customer snapshot."

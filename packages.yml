@@ -1,0 +1,3 @@
+packages: []
+# No external packages required — all transformation logic is implemented natively.
+# To add packages, visit https://hub.getdbt.com and run `dbt deps` after updating.
