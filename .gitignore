@@ -23,9 +23,9 @@ __pycache__/
 venv/
 env/
 
-# Dokumentasi
-README.md
+# Dokumentasi (catatan pribadi — tidak di-push)
 WALKTHROUGH.md
+NOTION_PORTFOLIO.md
 
 # OS
 .DS_Store
