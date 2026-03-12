@@ -38,7 +38,7 @@ jobs:
 
       - name: Upload dbt artifacts (logs + target)
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: dbt-artifacts
           path: |
