@@ -1,0 +1,67 @@
+name: dbt Nightly
+
+on:
+  # Run every night at 00:00 UTC
+  schedule:
+    - cron: '0 0 * * *'
+
+  # Allow manual runs from the GitHub UI (useful for demos)
+  workflow_dispatch:
+
+jobs:
+  nightly-build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: demo_io
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dbt (Postgres adapter)
+        run: |
+          pip install dbt-postgres
+
+      - name: Run dbt compile (nightly)
+        run: |
+          dbt --version
+          dbt compile
+        working-directory: .
+        env:
+          DBT_PROFILES_DIR: .
+          DBT_HOST: localhost
+          DBT_PORT: 5432
+          DBT_DBNAME: demo_io
+          DBT_USER: postgres
+          DBT_PASSWORD: postgres
+
+      - name: Create run_results.json
+        run: |
+          mkdir -p target
+          echo '{ "metadata": { "job": "nightly", "mode": "compile-only" }, "results": [], "elapsed_time": 0 }' > target/run_results.json
+
+      - name: Upload dbt nightly artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-nightly-artifacts
+          path: target
