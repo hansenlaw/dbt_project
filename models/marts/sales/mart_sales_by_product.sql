@@ -1,13 +1,13 @@
 {{ config(materialized='table') }}
 
 /*
-  Untuk: Tim Sales
-  Isi  : Performa tiap produk — revenue, qty terjual, jumlah transaksi,
-         harga rata-rata, dan ranking
-  Kegunaan:
-    - Identifikasi produk terlaris (untuk prioritas stok & promosi)
-    - Deteksi produk slow-moving
-    - Analisa apakah harga produk konsisten antar toko
+  For: Sales team
+  Contains: Per-product performance — revenue, quantity sold, transaction count,
+            average price, and monthly rankings
+  Use cases:
+    - Identify best-selling products (for stock prioritization and promotions)
+    - Detect slow-moving products
+    - Analyze whether product pricing is consistent across stores
 */
 
 WITH product_stats AS (
@@ -52,4 +52,3 @@ SELECT
     revenue_rank,
     qty_rank
 FROM with_rank
-ORDER BY month, revenue_rank

@@ -106,6 +106,16 @@ models:
           - not_null
           - unique
 
+      - name: start_date
+        description: "Date this store code became active."
+        tests:
+          - not_null
+
+      - name: end_date
+        description: "Always 9999-12-31 for active stores."
+        tests:
+          - not_null
+
   - name: closed_store
     description: "Retired store codes (end_date < CURRENT_DATE)."
     columns:
@@ -119,7 +129,12 @@ models:
         tests:
           - not_null
 
+      - name: start_date
+        description: "Date this store code became active."
+        tests:
+          - not_null
+
       - name: end_date
-        description: "Date the store code was closed. Must be in the past."
+        description: "Date the store code was retired. Always in the past for closed stores."
         tests:
           - not_null

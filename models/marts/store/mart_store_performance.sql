@@ -1,13 +1,13 @@
 {{ config(materialized='table') }}
 
 /*
-  Untuk: Store Manager
-  Isi  : KPI performa tiap toko per bulan —
-         revenue, jumlah order, unique customer, avg order value, dan rank
-  Kegunaan:
-    - Monitor target bulanan per toko
-    - Bandingkan performa antar toko (ranking)
-    - Deteksi toko yang perlu perhatian (revenue drop)
+  For: Store Managers
+  Contains: Monthly store KPIs —
+            revenue, order count, unique customers, avg order value, and ranking
+  Use cases:
+    - Monitor monthly targets per store
+    - Benchmark performance across stores (ranking)
+    - Detect stores that need attention (revenue drop)
 */
 
 WITH sales_with_store AS (
@@ -19,8 +19,8 @@ WITH sales_with_store AS (
         fs.product_id,
         fs.quantity,
         fs.total_amount,
-        wis.initial_store_code,           -- stable store ID meski kode toko berubah
-        wis.store_code AS current_code    -- kode toko saat transaksi terjadi
+        wis.initial_store_code,           -- stable store ID even when store code changes
+        wis.store_code AS current_code    -- store code at the time of the transaction
     FROM {{ ref('fact_sales') }} fs
     LEFT JOIN {{ ref('working_initial_store') }} wis
         ON  fs.store_code = wis.store_code
@@ -68,4 +68,3 @@ SELECT
     revenue_rank,
     cumulative_revenue
 FROM with_rank
-ORDER BY month, revenue_rank

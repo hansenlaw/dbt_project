@@ -1,13 +1,13 @@
 {{ config(materialized='table') }}
 
 /*
-  Untuk: Store Manager
-  Isi  : Direktori lengkap toko — kode awal, kode aktif saat ini,
-         status (active/closed), riwayat pergantian kode, dan total revenue
-  Kegunaan:
-    - Lihat toko mana yang masih aktif dan sudah tutup
-    - Lacak riwayat pergantian kode toko (SCD2)
-    - Lihat kontribusi revenue lifetime tiap toko
+  For: Store Managers
+  Contains: Full store registry — initial code, current active code,
+            status (active/closed), code change history, and total revenue
+  Use cases:
+    - See which stores are still active and which have closed
+    - Track store code change history (SCD2)
+    - View lifetime revenue contribution per store
 */
 
 WITH store_history AS (
@@ -41,7 +41,7 @@ code_change_count AS (
 
     SELECT
         initial_store_code,
-        COUNT(*) - 1 AS total_code_changes   -- jumlah kali kode toko berubah
+        COUNT(*) - 1 AS total_code_changes   -- number of times the store code has changed
     FROM store_history
     GROUP BY 1
 
@@ -49,15 +49,16 @@ code_change_count AS (
 
 lifetime_revenue AS (
 
+    -- reuse store_history CTE to avoid a second scan of working_initial_store
     SELECT
-        wis.initial_store_code,
-        SUM(fs.total_amount) AS lifetime_revenue,
+        sh.initial_store_code,
+        SUM(fs.total_amount)        AS lifetime_revenue,
         COUNT(DISTINCT fs.order_id) AS lifetime_orders
     FROM {{ ref('fact_sales') }} fs
-    LEFT JOIN {{ ref('working_initial_store') }} wis
-        ON  fs.store_code = wis.store_code
-        AND fs.order_date >= wis.start_date
-        AND fs.order_date <  wis.end_date
+    LEFT JOIN store_history sh
+        ON  fs.store_code  = sh.store_code
+        AND fs.order_date >= sh.start_date
+        AND fs.order_date  < sh.end_date
     GROUP BY 1
 
 )
@@ -71,7 +72,7 @@ SELECT
     COALESCE(lr.lifetime_revenue, 0) AS lifetime_revenue,
     COALESCE(lr.lifetime_orders, 0)  AS lifetime_orders
 FROM (
-    -- ambil satu baris per toko (representasi current/last status)
+    -- one representative row per store (most recent status)
     SELECT DISTINCT ON (initial_store_code)
         initial_store_code, status
     FROM store_history
@@ -80,4 +81,3 @@ FROM (
 LEFT JOIN current_code       c   ON h.initial_store_code = c.initial_store_code
 LEFT JOIN code_change_count  cc  ON h.initial_store_code = cc.initial_store_code
 LEFT JOIN lifetime_revenue   lr  ON h.initial_store_code = lr.initial_store_code
-ORDER BY h.initial_store_code

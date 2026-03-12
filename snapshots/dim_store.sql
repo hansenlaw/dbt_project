@@ -1,8 +1,3 @@
--- ============================================================
--- CELL 2: DBT SNAPSHOT FILE
--- Simpan di: snapshots/dim_store.sql
--- ============================================================
-
 {% snapshot dim_store %}
 {{
     config(

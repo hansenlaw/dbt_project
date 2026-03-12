@@ -1,13 +1,13 @@
 {{ config(materialized='table') }}
 
 /*
-  Untuk: Tim Sales
-  Isi  : Ringkasan penjualan harian dan bulanan —
-         total revenue, order, qty, dan growth vs periode sebelumnya
-  Kegunaan:
-    - Monitor target revenue harian/bulanan
-    - Deteksi hari/bulan dengan penjualan rendah
-    - Hitung growth MoM (month-over-month)
+  For: Sales team
+  Contains: Daily and monthly sales aggregates —
+            total revenue, orders, quantity, and month-over-month growth
+  Use cases:
+    - Monitor daily/monthly revenue targets
+    - Detect days/months with low sales
+    - Calculate MoM (month-over-month) growth
 */
 
 WITH daily AS (
@@ -26,19 +26,28 @@ WITH daily AS (
 
 ),
 
-monthly AS (
+monthly_agg AS (
 
     SELECT
         month,
-        SUM(total_orders)       AS total_orders,
-        SUM(unique_customers)   AS unique_customers,
-        MAX(active_stores)      AS active_stores,
-        SUM(total_qty)          AS total_qty,
-        SUM(total_revenue)      AS total_revenue,
-        ROUND(AVG(avg_order_value), 2) AS avg_order_value,
-        LAG(SUM(total_revenue)) OVER (ORDER BY month) AS prev_month_revenue
+        SUM(total_orders)              AS total_orders,
+        SUM(unique_customers)          AS unique_customers,
+        MAX(active_stores)             AS active_stores,
+        SUM(total_qty)                 AS total_qty,
+        SUM(total_revenue)             AS total_revenue,
+        ROUND(AVG(avg_order_value), 2) AS avg_order_value
     FROM daily
     GROUP BY 1
+
+),
+
+monthly AS (
+
+    -- LAG is separated here so it operates cleanly on already-aggregated rows
+    SELECT
+        *,
+        LAG(total_revenue) OVER (ORDER BY month) AS prev_month_revenue
+    FROM monthly_agg
 
 ),
 
@@ -57,7 +66,7 @@ monthly_with_growth AS (
 
 )
 
--- DAILY GRAIN: untuk monitoring harian
+-- DAILY GRAIN: for day-level monitoring
 SELECT
     'daily'                   AS grain,
     order_date::TEXT          AS period,
@@ -73,7 +82,7 @@ FROM daily
 
 UNION ALL
 
--- MONTHLY GRAIN: untuk laporan bulanan + growth
+-- MONTHLY GRAIN: for monthly reporting + MoM growth
 SELECT
     'monthly'                 AS grain,
     month                     AS period,
@@ -86,5 +95,3 @@ SELECT
     avg_order_value,
     revenue_growth_pct
 FROM monthly_with_growth
-
-ORDER BY grain DESC, period

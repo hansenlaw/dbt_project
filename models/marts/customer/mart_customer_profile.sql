@@ -1,24 +1,30 @@
 {{ config(materialized='table') }}
 
 /*
-  Untuk: Tim Marketing / CRM
-  Isi  : Direktori lengkap customer — profil terkini, tier saat ini,
-         riwayat perubahan tier (SCD2), dan statistik transaksi lifetime
-  Kegunaan:
-    - Lihat profil lengkap setiap customer beserta tier aktif
-    - Lacak riwayat perubahan tier customer (Bronze→Silver→Gold)
-    - Lihat kontribusi lifetime value tiap customer
-    - Dasar targeting kampanye berdasarkan tier & lokasi
+  For: Marketing / CRM team
+  Contains: Full customer directory — current profile, active loyalty tier,
+            tier change history (SCD2), and lifetime transaction statistics
+  Use cases:
+    - View complete customer profile with active tier
+    - Track customer tier progression history (Bronze → Silver → Gold)
+    - View lifetime value contribution per customer
+    - Base for campaign targeting by tier and location
 
-  Catatan: model ini membutuhkan dbt snapshot dim_customer sudah dijalankan
-           sebelum dbt run (`dbt snapshot --var 'raw_data_date: ...'`)
+  Note: requires dbt snapshot dim_customer to be run before dbt run
+        (`dbt snapshot --var 'raw_data_date: ...'`)
 */
 
-WITH customer_history AS (
+WITH all_versions AS (
 
-    -- seluruh riwayat SCD2 dari snapshot dim_customer
+    -- single scan of dim_customer; split into current profile and history below
     SELECT
         customer_id,
+        full_name,
+        email,
+        phone,
+        city,
+        province,
+        registration_date,
         tier,
         dbt_valid_from,
         dbt_valid_to,
@@ -32,7 +38,7 @@ WITH customer_history AS (
 
 current_profile AS (
 
-    -- ambil baris paling baru (dbt_valid_to IS NULL = masih aktif)
+    -- most recent row (dbt_valid_to IS NULL = still active)
     SELECT
         customer_id,
         full_name,
@@ -43,7 +49,7 @@ current_profile AS (
         registration_date,
         tier       AS current_tier,
         dbt_valid_from AS tier_since
-    FROM {{ ref('dim_customer') }}
+    FROM all_versions
     WHERE dbt_valid_to IS NULL
 
 ),
@@ -52,19 +58,19 @@ tier_change_count AS (
 
     SELECT
         customer_id,
-        COUNT(*) - 1 AS total_tier_upgrades   -- versi pertama bukan "perubahan"
-    FROM customer_history
+        COUNT(*) - 1 AS total_tier_upgrades   -- first version is not a "change"
+    FROM all_versions
     GROUP BY 1
 
 ),
 
 tier_journey AS (
 
-    -- rekap perjalanan tier: Bronze→Silver atau Silver→Gold
+    -- chronological tier progression summary: Bronze → Silver → Gold
     SELECT
         customer_id,
         STRING_AGG(tier, ' → ' ORDER BY dbt_valid_from) AS tier_journey
-    FROM customer_history
+    FROM all_versions
     GROUP BY 1
 
 ),
@@ -73,11 +79,11 @@ lifetime_stats AS (
 
     SELECT
         customer_id,
-        COUNT(DISTINCT order_id)     AS lifetime_orders,
-        SUM(total_amount)            AS lifetime_spend,
-        MIN(order_date)              AS first_purchase_date,
-        MAX(order_date)              AS last_purchase_date,
-        CURRENT_DATE - MAX(order_date) AS days_since_last_purchase
+        COUNT(DISTINCT order_id)           AS lifetime_orders,
+        SUM(total_amount)                  AS lifetime_spend,
+        MIN(order_date)                    AS first_purchase_date,
+        MAX(order_date)                    AS last_purchase_date,
+        CURRENT_DATE - MAX(order_date)     AS days_since_last_purchase
     FROM {{ ref('fact_sales') }}
     GROUP BY 1
 
@@ -105,4 +111,3 @@ FROM current_profile       cp
 LEFT JOIN tier_change_count  tc ON cp.customer_id = tc.customer_id
 LEFT JOIN tier_journey       tj ON cp.customer_id = tj.customer_id
 LEFT JOIN lifetime_stats     ls ON cp.customer_id = ls.customer_id
-ORDER BY ls.lifetime_spend DESC NULLS LAST
