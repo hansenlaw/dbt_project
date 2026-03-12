@@ -5,12 +5,26 @@ on:
     branches: [ main ]
   pull_request:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   dbt-build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: demo_io
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repo
@@ -22,8 +36,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dbt (Postgres adapter)
-        run: |
-          pip install dbt-postgres
+        run: pip install dbt-postgres
 
       - name: Compile dbt models (syntax check)
         run: |
@@ -32,11 +45,11 @@ jobs:
         working-directory: .
         env:
           DBT_PROFILES_DIR: .
-          DBT_HOST: ${{ secrets.DBT_HOST }}
-          DBT_PORT: ${{ secrets.DBT_PORT }}
-          DBT_DBNAME: ${{ secrets.DBT_DBNAME }}
-          DBT_USER: ${{ secrets.DBT_USER }}
-          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+          DBT_HOST: localhost
+          DBT_PORT: 5432
+          DBT_DBNAME: demo_io
+          DBT_USER: postgres
+          DBT_PASSWORD: postgres
 
       - name: Upload dbt artifacts (logs + target)
         if: always()
