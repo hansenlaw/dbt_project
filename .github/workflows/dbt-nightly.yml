@@ -73,3 +73,48 @@ jobs:
         with:
           name: dbt-nightly-artifacts
           path: target
+
+      - name: Notify Telegram
+        if: always()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_STATUS: ${{ job.status }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not configured, skipping."
+            exit 0
+          fi
+          cat > /tmp/notify.py << 'PYEOF'
+          import urllib.request, json, os
+          t = os.environ
+          status = t['JOB_STATUS']
+          link = t['SERVER_URL'] + '/' + t['REPO'] + '/actions/runs/' + t['RUN_ID']
+          emoji = '✅' if status == 'success' else '❌'
+          label = 'SUKSES' if status == 'success' else 'GAGAL'
+          text = (
+              emoji + ' <b>dbt Nightly ' + label + '</b>\n\n'
+              '📁 Repo: <code>' + t['REPO'] + '</code>\n\n'
+              '🔗 <a href="' + link + '">Lihat Detail Log</a>'
+          )
+          data = json.dumps({
+              'chat_id': t['TELEGRAM_CHAT_ID'],
+              'text': text,
+              'parse_mode': 'HTML',
+              'disable_web_page_preview': True,
+          }).encode()
+          req = urllib.request.Request(
+              'https://api.telegram.org/bot' + t['TELEGRAM_TOKEN'] + '/sendMessage',
+              data=data,
+              headers={'Content-Type': 'application/json'},
+          )
+          try:
+              r = urllib.request.urlopen(req)
+              print('Telegram sent:', r.status)
+          except Exception as e:
+              print('Telegram failed (non-blocking):', e)
+          PYEOF
+          python3 /tmp/notify.py || true
