@@ -4,7 +4,8 @@ target/
 dbt_packages/
 logs/
 
-# dbt profiles lokal (override via ~/.dbt/profiles.yml)
+# dbt profiles — jangan di-commit, simpan di ~/.dbt/profiles.yml
+profiles.yml
 *.profiles.yml
 
 # Environment & secrets

@@ -38,18 +38,27 @@ jobs:
       - name: Install dbt (Postgres adapter)
         run: pip install dbt-postgres
 
+      - name: Create profiles.yml for CI
+        run: |
+          cat > profiles.yml <<EOF
+          io_testing:
+            outputs:
+              dev:
+                type: postgres
+                host: localhost
+                port: 5432
+                dbname: demo_io
+                user: postgres
+                password: postgres
+                schema: public
+                threads: 4
+            target: dev
+          EOF
+
       - name: Compile dbt models (syntax check)
         run: |
           dbt --version
-          dbt compile
-        working-directory: .
-        env:
-          DBT_PROFILES_DIR: .
-          DBT_HOST: localhost
-          DBT_PORT: 5432
-          DBT_DBNAME: demo_io
-          DBT_USER: postgres
-          DBT_PASSWORD: postgres
+          dbt compile --profiles-dir .
 
       - name: Upload dbt artifacts (logs + target)
         if: always()
