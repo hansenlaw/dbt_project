@@ -1,0 +1,37 @@
+
+# dbt artifacts (generated, tidak perlu di-commit)
+target/
+dbt_packages/
+logs/
+
+# dbt profiles — BERISI PASSWORD & KONEKSI DATABASE
+profiles.yml
+*.profiles.yml
+
+# Environment & secrets
+.env
+.env.*
+*.env
+secrets.yml
+credentials.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Dokumentasi
+README.md
+WALKTHROUGH.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,125 @@
+version: 2
+
+models:
+
+  # ── FACT TABLE ───────────────────────────────────────────────
+
+  - name: fact_sales
+    description: "Incremental fact table of sales transactions, partitioned by partition_time."
+    columns:
+      - name: order_id
+        description: "Surrogate key for each sales order."
+        tests:
+          - not_null
+          - unique
+
+      - name: order_date
+        description: "Date the order was placed."
+        tests:
+          - not_null
+
+      - name: store_code
+        description: "Code of the store where the sale occurred."
+        tests:
+          - not_null
+
+      - name: customer_id
+        description: "Identifier of the customer."
+        tests:
+          - not_null
+
+      - name: product_id
+        description: "Identifier of the product sold."
+        tests:
+          - not_null
+
+      - name: quantity
+        description: "Number of units sold. Must be at least 1."
+        tests:
+          - not_null
+          - assert_positive_quantity
+
+      - name: unit_price
+        description: "Price per unit at time of sale. Must be greater than zero."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: total_amount
+        description: "Total transaction value (quantity × unit_price)."
+        tests:
+          - not_null
+          - assert_positive_amount
+          - assert_total_amount_consistent:
+              arguments:
+                qty_column: quantity
+                price_column: unit_price
+                tolerance: 1
+
+      - name: partition_time
+        description: "Partition date used to filter incremental loads."
+        tests:
+          - not_null
+
+  # ── INTERMEDIATE: STORE SCD2 ─────────────────────────────────
+
+  - name: working_initial_store
+    description: >
+      SCD Type 2 mapping of store codes. Tracks when a store_code changes
+      by closing the old row (end_date = change date) and opening a new one
+      (end_date = 9999-12-31). initial_store_code is the stable identifier.
+    columns:
+      - name: initial_store_code
+        description: "Original store code — stable identifier across all renames."
+        tests:
+          - not_null
+
+      - name: store_code
+        description: "Store code active during this period."
+        tests:
+          - not_null
+
+      - name: start_date
+        description: "Date this store_code became active."
+        tests:
+          - not_null
+
+      - name: end_date
+        description: "Date this store_code was retired. 9999-12-31 = still active."
+        tests:
+          - not_null
+
+  # ── INTERMEDIATE: ACTIVE / CLOSED ────────────────────────────
+
+  - name: active_store
+    description: "Active store codes only (end_date = 9999-12-31)."
+    columns:
+      - name: initial_store_code
+        description: "Stable store identifier."
+        tests:
+          - not_null
+          - unique
+
+      - name: store_code
+        description: "Current active store code."
+        tests:
+          - not_null
+          - unique
+
+  - name: closed_store
+    description: "Retired store codes (end_date < CURRENT_DATE)."
+    columns:
+      - name: initial_store_code
+        description: "Stable store identifier."
+        tests:
+          - not_null
+
+      - name: store_code
+        description: "The retired store code."
+        tests:
+          - not_null
+
+      - name: end_date
+        description: "Date the store code was closed. Must be in the past."
+        tests:
+          - not_null

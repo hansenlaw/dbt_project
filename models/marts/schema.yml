@@ -1,0 +1,289 @@
+version: 2
+
+models:
+
+  # ── CUSTOMER MARTS ────────────────────────────────────────────
+
+  - name: mart_customer_profile
+    description: >
+      Direktori lengkap customer dengan profil terkini, tier aktif, riwayat perubahan tier (SCD2),
+      dan statistik transaksi lifetime. Digunakan Tim Marketing/CRM untuk targeting kampanye,
+      program loyalitas, dan analisa tier upgrade.
+    columns:
+      - name: customer_id
+        description: "ID customer. Identitas permanen tidak berubah."
+        tests:
+          - not_null
+          - unique
+
+      - name: full_name
+        description: "Nama lengkap customer."
+        tests:
+          - not_null
+
+      - name: email
+        description: "Alamat email customer saat ini."
+        tests:
+          - not_null
+
+      - name: city
+        description: "Kota domisili customer."
+        tests:
+          - not_null
+
+      - name: province
+        description: "Provinsi domisili customer."
+        tests:
+          - not_null
+
+      - name: registration_date
+        description: "Tanggal customer pertama kali mendaftar."
+        tests:
+          - not_null
+
+      - name: days_as_customer
+        description: "Jumlah hari sejak registrasi hingga hari ini."
+        tests:
+          - not_null
+
+      - name: current_tier
+        description: "Tier loyalitas customer saat ini: Bronze / Silver / Gold."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Bronze', 'Silver', 'Gold']
+          - no_invalid_tier
+
+      - name: tier_since
+        description: "Tanggal tier saat ini mulai berlaku."
+        tests:
+          - not_null
+
+      - name: total_tier_upgrades
+        description: "Berapa kali tier customer sudah naik."
+        tests:
+          - not_null
+
+      - name: tier_journey
+        description: "Rekap perjalanan tier customer (contoh: Bronze → Silver → Gold)."
+
+      - name: lifetime_orders
+        description: "Total order sepanjang customer berbelanja."
+        tests:
+          - not_null
+
+      - name: lifetime_spend
+        description: "Total nilai belanja sepanjang waktu."
+        tests:
+          - not_null
+
+  # ── STORE MARTS ──────────────────────────────────────────────
+
+  - name: mart_store_performance
+    description: >
+      KPI performa toko per bulan. Digunakan oleh Store Manager untuk
+      memonitor revenue, jumlah order, unique customer, dan ranking antar toko.
+    columns:
+      - name: initial_store_code
+        description: "Kode toko stabil (tidak berubah meski kode toko diganti)."
+        tests:
+          - not_null
+
+      - name: month
+        description: "Periode bulan (YYYY-MM)."
+        tests:
+          - not_null
+
+      - name: total_orders
+        description: "Jumlah order dalam bulan tersebut."
+        tests:
+          - not_null
+
+      - name: unique_customers
+        description: "Jumlah customer unik yang berbelanja."
+        tests:
+          - not_null
+
+      - name: total_qty_sold
+        description: "Total unit produk terjual."
+        tests:
+          - not_null
+
+      - name: total_revenue
+        description: "Total nilai penjualan."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: avg_order_value
+        description: "Rata-rata nilai per transaksi."
+        tests:
+          - not_null
+
+      - name: revenue_rank
+        description: "Ranking toko berdasarkan revenue di bulan tersebut (1 = tertinggi)."
+        tests:
+          - not_null
+
+      - name: cumulative_revenue
+        description: "Akumulasi revenue sejak data pertama."
+        tests:
+          - not_null
+
+  - name: mart_store_directory
+    description: >
+      Direktori toko lengkap dengan status aktif/tutup, riwayat pergantian kode,
+      dan kontribusi revenue lifetime. Digunakan Store Manager untuk overview portofolio toko.
+    columns:
+      - name: initial_store_code
+        description: "Kode toko awal sebagai identitas permanen."
+        tests:
+          - not_null
+          - unique
+
+      - name: status
+        description: "Status toko: active atau closed."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['active', 'closed']
+          - no_invalid_store_status
+
+      - name: total_code_changes
+        description: "Berapa kali kode toko sudah berubah."
+        tests:
+          - not_null
+
+      - name: lifetime_revenue
+        description: "Total revenue sepanjang toko beroperasi."
+        tests:
+          - not_null
+
+      - name: lifetime_orders
+        description: "Total order sepanjang toko beroperasi."
+        tests:
+          - not_null
+
+  # ── SALES MARTS ──────────────────────────────────────────────
+
+  - name: mart_sales_summary
+    description: >
+      Ringkasan penjualan per hari dan per bulan. Digunakan Tim Sales untuk
+      monitoring target, analisa tren, dan hitung growth MoM.
+    columns:
+      - name: grain
+        description: "Level agregasi: daily atau monthly."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['daily', 'monthly']
+
+      - name: period
+        description: "Nilai periode (tanggal untuk daily, YYYY-MM untuk monthly)."
+        tests:
+          - not_null
+
+      - name: total_orders
+        description: "Jumlah order pada periode tersebut."
+        tests:
+          - not_null
+
+      - name: total_revenue
+        description: "Total penjualan pada periode tersebut."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+  - name: mart_sales_by_product
+    description: >
+      Performa tiap produk per bulan. Digunakan Tim Sales untuk identifikasi
+      produk terlaris, slow-moving, dan konsistensi harga antar toko.
+    columns:
+      - name: product_id
+        description: "ID produk."
+        tests:
+          - not_null
+
+      - name: month
+        description: "Periode bulan (YYYY-MM)."
+        tests:
+          - not_null
+
+      - name: total_qty_sold
+        description: "Total unit terjual dalam bulan tersebut."
+        tests:
+          - not_null
+          - assert_positive_quantity
+
+      - name: total_revenue
+        description: "Total revenue dari produk ini."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: revenue_rank
+        description: "Ranking produk berdasarkan revenue (1 = terlaris)."
+        tests:
+          - not_null
+
+      - name: qty_rank
+        description: "Ranking produk berdasarkan qty terjual."
+        tests:
+          - not_null
+
+  - name: mart_sales_by_customer
+    description: >
+      Profil nilai dan segmentasi tiap customer (RFM). Digunakan Tim Sales untuk
+      program loyalitas, retensi customer berisiko churn, dan targeting promosi.
+    columns:
+      - name: customer_id
+        description: "ID customer."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_orders
+        description: "Total order sepanjang waktu."
+        tests:
+          - not_null
+
+      - name: total_spend
+        description: "Total belanja sepanjang waktu."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: avg_order_value
+        description: "Rata-rata nilai per transaksi."
+        tests:
+          - not_null
+
+      - name: days_since_last_purchase
+        description: "Jumlah hari sejak transaksi terakhir (indikator churn)."
+        tests:
+          - not_null
+
+      - name: recency_score
+        description: "Skor recency RFM (1–3). 3 = beli dalam 30 hari terakhir."
+        tests:
+          - not_null
+          - no_invalid_rfm_score
+
+      - name: frequency_score
+        description: "Skor frequency RFM (1–3). 3 = 5+ order."
+        tests:
+          - not_null
+          - no_invalid_rfm_score
+
+      - name: monetary_score
+        description: "Skor monetary RFM (1–3). 3 = total belanja ≥ 300.000."
+        tests:
+          - not_null
+          - no_invalid_rfm_score
+
+      - name: customer_segment
+        description: "Segmen RFM: Champions / Loyal / Promising / At Risk / Need Attention."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Champions', 'Loyal', 'Promising', 'At Risk', 'Need Attention']

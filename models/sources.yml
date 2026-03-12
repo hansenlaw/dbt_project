@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: public
+    schema: public
+    tables:
+      - name: src_store_detail
+      - name: src_store
+      - name: src_sales
+      - name: src_customer
