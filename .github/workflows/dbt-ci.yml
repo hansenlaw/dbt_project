@@ -1,0 +1,46 @@
+name: dbt CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  dbt-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dbt (Postgres adapter)
+        run: |
+          pip install dbt-postgres
+
+      - name: Run dbt build
+        run: |
+          dbt --version
+          dbt debug || true
+          dbt build
+        working-directory: .
+        env:
+          DBT_PROFILES_DIR: .
+          DBT_HOST: ${{ secrets.DBT_HOST }}
+          DBT_PORT: ${{ secrets.DBT_PORT }}
+          DBT_DBNAME: ${{ secrets.DBT_DBNAME }}
+          DBT_USER: ${{ secrets.DBT_USER }}
+          DBT_PASSWORD: ${{ secrets.DBT_PASSWORD }}
+
+      - name: Upload dbt artifacts (logs + target)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-artifacts
+          path: |
+            logs
+            target

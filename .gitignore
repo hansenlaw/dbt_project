@@ -4,8 +4,7 @@ target/
 dbt_packages/
 logs/
 
-# dbt profiles — BERISI PASSWORD & KONEKSI DATABASE
-profiles.yml
+# dbt profiles lokal (override via ~/.dbt/profiles.yml)
 *.profiles.yml
 
 # Environment & secrets
