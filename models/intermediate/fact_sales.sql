@@ -6,9 +6,9 @@
 SELECT
     s.order_id,
     s.order_date,
-    s.store_code,
-    s.customer_id,
-    s.product_id,
+    {{ clean_id('s.store_code') }}    AS store_code,
+    {{ clean_id('s.customer_id') }}   AS customer_id,
+    {{ clean_id('s.product_id') }}    AS product_id,
     s.quantity,
     s.unit_price,
     s.total_amount,

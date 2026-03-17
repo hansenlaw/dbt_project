@@ -7,7 +7,7 @@
 WITH src AS (
 
     SELECT
-        CAST(store_code AS TEXT) AS store_code,
+        {{ clean_id('CAST(store_code AS TEXT)') }} AS store_code,
         CAST(latitude AS TEXT) AS latitude,
         CAST(longitude AS TEXT) AS longitude,
         partition_time::date AS start_date
@@ -24,7 +24,7 @@ initial_store AS (
         longitude
     FROM (
         SELECT
-            store_code,
+            {{ clean_id('CAST(store_code AS TEXT)') }} AS store_code,
             latitude,
             longitude,
             ROW_NUMBER() OVER(

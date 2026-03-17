@@ -17,13 +17,14 @@
 WITH all_versions AS (
 
     -- single scan of dim_customer; split into current profile and history below
+    -- cleaning applied here so all downstream CTEs get standardised values
     SELECT
-        customer_id,
-        full_name,
-        email,
+        {{ clean_id('customer_id') }}       AS customer_id,
+        {{ clean_name('full_name') }}       AS full_name,
+        {{ clean_email('email') }}          AS email,
         phone,
-        city,
-        province,
+        {{ clean_name('city') }}            AS city,
+        {{ clean_name('province') }}        AS province,
         registration_date,
         tier,
         dbt_valid_from,
