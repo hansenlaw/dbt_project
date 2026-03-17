@@ -1,4 +1,7 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized = 'table',
+    post_hook    = "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_grain_period ON {{ this }} (grain, period)"
+) }}
 
 /*
   For: Sales team

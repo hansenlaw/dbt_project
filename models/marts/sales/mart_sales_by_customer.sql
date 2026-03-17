@@ -1,4 +1,7 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized = 'table',
+    post_hook    = "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_customer ON {{ this }} (customer_id)"
+) }}
 
 /*
   For: Sales team

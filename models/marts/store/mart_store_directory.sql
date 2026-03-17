@@ -1,4 +1,7 @@
-{{ config(materialized='table') }}
+{{ config(
+    materialized = 'table',
+    post_hook    = "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_store_code ON {{ this }} (initial_store_code)"
+) }}
 
 /*
   For: Store Managers

@@ -1,6 +1,12 @@
 {{ config(
     materialized    = 'incremental',
-    unique_key      = 'order_id'
+    unique_key      = 'order_id',
+    post_hook       = [
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_order_date  ON {{ this }} (order_date)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_customer_id ON {{ this }} (customer_id)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_store_code  ON {{ this }} (store_code)",
+        "CREATE INDEX IF NOT EXISTS idx_{{ this.name }}_product_id  ON {{ this }} (product_id)"
+    ]
 ) }}
 
 SELECT
