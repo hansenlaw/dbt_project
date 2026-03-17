@@ -75,15 +75,19 @@ jobs:
             logs
             target
 
-      - name: Notify Telegram on failure
-        if: failure()
+      - name: Notify Telegram on push
+        if: always()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          JOB_STATUS: ${{ job.status }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           SERVER_URL: ${{ github.server_url }}
           REF_NAME: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "Telegram secrets not configured, skipping."
@@ -92,12 +96,20 @@ jobs:
           cat > /tmp/notify.py << 'PYEOF'
           import urllib.request, json, os
           t = os.environ
-          link = t['SERVER_URL'] + '/' + t['REPO'] + '/actions/runs/' + t['RUN_ID']
+          status  = t['JOB_STATUS']
+          link    = t['SERVER_URL'] + '/' + t['REPO'] + '/actions/runs/' + t['RUN_ID']
+          emoji   = '✅' if status == 'success' else '❌'
+          label   = 'SUKSES' if status == 'success' else 'GAGAL'
+          sha     = t['COMMIT_SHA'][:7]
+          msg     = t['COMMIT_MSG'].splitlines()[0][:60]   # first line, max 60 chars
           text = (
-              '❌ <b>dbt CI GAGAL</b>\n\n'
-              '📁 Repo: <code>' + t['REPO'] + '</code>\n'
-              '🌿 Branch: <code>' + t['REF_NAME'] + '</code>\n\n'
-              '🔗 <a href="' + link + '">Lihat Detail Log</a>'
+              emoji + ' <b>dbt CI Push — ' + label + '</b>\n\n'
+              '📁 <code>' + t['REPO'] + '</code>\n'
+              '🌿 Branch : <code>' + t['REF_NAME'] + '</code>\n'
+              '👤 By     : <code>' + t['ACTOR'] + '</code>\n'
+              '🔢 Commit : <code>' + sha + '</code>\n'
+              '📝 Pesan  : ' + msg + '\n\n'
+              '🔗 <a href="' + link + '">Lihat Log CI</a>'
           )
           data = json.dumps({
               'chat_id': t['TELEGRAM_CHAT_ID'],
