@@ -1,0 +1,260 @@
+version: 2
+
+models:
+
+  # ── KPI: REVENUE ────────────────────────────────────────────────────────────
+
+  - name: kpi_revenue
+    description: >
+      Monthly revenue performance KPIs. One row per calendar month.
+      Includes MoM growth, 3-month rolling average, cumulative revenue,
+      and revenue share. Source of truth for Finance reporting.
+    columns:
+      - name: month
+        description: "Calendar month in YYYY-MM format."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_revenue
+        description: "Sum of all transaction values in this month."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: total_orders
+        description: "Number of distinct orders placed in this month."
+        tests:
+          - not_null
+
+      - name: unique_buyers
+        description: "Number of distinct customers who made at least one purchase."
+        tests:
+          - not_null
+
+      - name: total_qty_sold
+        description: "Total units sold across all transactions."
+        tests:
+          - not_null
+
+      - name: cumulative_revenue
+        description: "Running total of revenue from all-time first month through this month."
+        tests:
+          - not_null
+
+  # ── KPI: ORDERS ─────────────────────────────────────────────────────────────
+
+  - name: kpi_orders
+    description: >
+      Monthly order volume and basket quality KPIs. One row per calendar month.
+      Tracks order frequency, average basket size, store productivity,
+      and purchase frequency per buyer.
+    columns:
+      - name: month
+        description: "Calendar month in YYYY-MM format."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_orders
+        description: "Total distinct orders placed in this month."
+        tests:
+          - not_null
+
+      - name: avg_order_value
+        description: "Average transaction value (total_revenue / total_orders)."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: avg_items_per_order
+        description: "Average units per order — proxy for basket fullness."
+        tests:
+          - not_null
+
+      - name: unique_buyers
+        description: "Distinct customers who placed at least one order."
+        tests:
+          - not_null
+
+      - name: active_stores
+        description: "Distinct store codes with at least one sale."
+        tests:
+          - not_null
+
+  # ── KPI: CUSTOMER RETENTION ─────────────────────────────────────────────────
+
+  - name: kpi_customer_retention
+    description: >
+      Monthly customer acquisition and retention KPIs. One row per calendar month.
+      Classifies buyers as new (first ever purchase) or returning (purchased before).
+      Calculates true M-over-M retention rate and churn rate.
+    columns:
+      - name: month
+        description: "Calendar month in YYYY-MM format."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_buyers
+        description: "Distinct customers who made at least one purchase this month."
+        tests:
+          - not_null
+
+      - name: new_customers
+        description: "Customers whose very first purchase ever was in this month."
+        tests:
+          - not_null
+
+      - name: returning_customers
+        description: "Customers who bought this month AND had at least one prior purchase."
+        tests:
+          - not_null
+
+      - name: retained_from_prev_month
+        description: >
+          Customers who bought both last month and this month.
+          Used as numerator in retention_rate_pct.
+        tests:
+          - not_null
+
+      - name: new_customer_pct
+        description: "new_customers as % of total_buyers. High = acquisition-heavy."
+        tests:
+          - not_null
+
+  # ── KPI: STORE ──────────────────────────────────────────────────────────────
+
+  - name: kpi_store
+    description: >
+      Monthly store network performance KPIs. One row per calendar month.
+      Identifies top and bottom performers, measures revenue concentration
+      (Pareto proxy), and tracks network-wide MoM growth.
+    columns:
+      - name: month
+        description: "Calendar month in YYYY-MM format."
+        tests:
+          - not_null
+          - unique
+
+      - name: active_store_count
+        description: "Number of stores with at least one sale this month."
+        tests:
+          - not_null
+
+      - name: total_market_revenue
+        description: "Sum of revenue across all stores this month."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: avg_revenue_per_store
+        description: "total_market_revenue / active_store_count."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: top_store_code
+        description: "initial_store_code of the highest-revenue store this month."
+        tests:
+          - not_null
+
+      - name: bottom_store_code
+        description: "initial_store_code of the lowest-revenue store this month."
+        tests:
+          - not_null
+
+      - name: top3_concentration_pct
+        description: >
+          Revenue share held by the top-3 stores. High value = revenue concentrated
+          in few stores (Pareto risk indicator).
+        tests:
+          - not_null
+
+  # ── KPI: PRODUCT ────────────────────────────────────────────────────────────
+
+  - name: kpi_product
+    description: >
+      Monthly product portfolio performance KPIs. One row per calendar month.
+      Tracks portfolio breadth, revenue concentration, top performers by revenue
+      and volume, and a diversity index for merchandising decisions.
+    columns:
+      - name: month
+        description: "Calendar month in YYYY-MM format."
+        tests:
+          - not_null
+          - unique
+
+      - name: distinct_products_sold
+        description: "Number of unique products with at least one sale."
+        tests:
+          - not_null
+
+      - name: total_product_revenue
+        description: "Sum of revenue across all products this month."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: avg_revenue_per_product
+        description: "Average revenue per product sold."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: top_product_by_revenue
+        description: "product_id with highest revenue this month."
+        tests:
+          - not_null
+
+      - name: top_product_by_qty
+        description: "product_id with highest quantity sold this month."
+        tests:
+          - not_null
+
+      - name: product_diversity_index
+        description: >
+          1 − (top product revenue share). Range 0–1.
+          0 = one product dominates entirely; ~1 = revenue perfectly distributed.
+        tests:
+          - not_null
+
+  # ── KPI: EXECUTIVE SUMMARY ──────────────────────────────────────────────────
+
+  - name: kpi_exec_summary
+    description: >
+      Full executive KPI dashboard. One wide row per calendar month joining
+      all five individual KPI models. Single source of truth for C-level reporting,
+      BI dashboards, and monthly business reviews.
+    columns:
+      - name: month
+        description: "Calendar month in YYYY-MM format."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_revenue
+        description: "Monthly total revenue (from kpi_revenue)."
+        tests:
+          - not_null
+          - assert_positive_amount
+
+      - name: total_orders
+        description: "Monthly total orders (from kpi_orders)."
+        tests:
+          - not_null
+
+      - name: unique_buyers
+        description: "Monthly distinct paying customers (from kpi_orders)."
+        tests:
+          - not_null
+
+      - name: active_store_count
+        description: "Stores with revenue this month (from kpi_store)."
+        tests:
+          - not_null
+
+      - name: distinct_products_sold
+        description: "Products with sales this month (from kpi_product)."
+        tests:
+          - not_null

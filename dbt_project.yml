@@ -45,3 +45,7 @@ models:
       customer:
         +schema: marts_customer
         +tags: ['customer']
+    kpi:
+      +materialized: table
+      +schema: marts_kpi
+      +tags: ['kpi']
