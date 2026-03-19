@@ -1,100 +1,53 @@
-SELECT * from src_store ORDER BY partition_time,latitude
-
-SELECT * from dim_initial_store_code
-
-SELECT * from working_initial_store order by initial_store_code,start_date
-
-DROP TABLE IF EXISTS src_store_detail CASCADE;
-
-CREATE TABLE src_store_detail (
-    store_code          TEXT,
-    store_description   TEXT,
-    country             TEXT,
-    area                TEXT,
-    city                TEXT,
-    district            TEXT,
-    zip                 TEXT,
-    channel_type        TEXT,
-    gross_area          NUMERIC,
-    net_sales_area      NUMERIC,
-    area_unit           TEXT,
-    latitude            TEXT,
-    longitude           TEXT,
-    opening_date        DATE,
-    closing_date        DATE,
-    local_currency      TEXT,
-    format              TEXT,
-    building_type       TEXT,
-    chain               TEXT,
-    class               TEXT,
-    segment             TEXT,
-    partition_time      DATE
-);
-
-SELECT * from src_store_detail
-
-INSERT INTO src_store_detail VALUES
-('Y001','CIKINI RAYA',           'IDN','KEL.CIKINI / MENTENG',         'JAKARTA PUSAT',    'DKI JAKARTA',      '10330','MODERN',  1200.00, 900.00,'SQM','-6.1754','106.8272','2020-03-01',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-01-01'),
-('Y002','CASABLANCA SELATAN',    'IDN','KEL.MENTENG DALAM / TEBET',    'JAKARTA SELATAN',  'DKI JAKARTA',      '12870','MODERN',   980.00, 750.00,'SQM','-6.2115','106.8451','2019-07-15',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-01-01'),
-('Y003','CILEDUG RAYA',          'IDN','CILEDUG / TANGERANG',          'TANGERANG',        'BANTEN',           '15157','MODERN',  1500.00,1100.00,'SQM','-6.3012','106.8124','2018-11-20',NULL,'IDR','HYPERMARKET','MALL',  'ALFAMART','A','SUBURBAN','2026-01-01'),
-('Y004','MOCH TOHA',             'IDN','PASAWAHAN / KIARACONDONG',     'BANDUNG',          'JAWA BARAT',       '40275','MODERN',   870.00, 650.00,'SQM','-6.9147','107.6098','2021-01-10',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-01-01'),
-('Y005','RAYA DARMO',            'IDN','DR.SOETOMO / TEGALSARI',       'SURABAYA',         'JAWA TIMUR',       '60264','MODERN',  2000.00,1500.00,'SQM','-7.2575','112.7521','2017-05-05',NULL,'IDR','HYPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-01-01'),
--- Stores yang akan ganti attribute
-('Y010','PURI KEMBANGAN',        'IDN','KEMBANGAN SELATAN / KEMBANGAN','JAKARTA BARAT',    'DKI JAKARTA',      '11610','MODERN',  1100.00, 820.00,'SQM','-6.1883','106.7652','2020-06-01',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','B','URBAN', '2026-01-01'),
-('Y020','KALIMALANG BARAT',      'IDN','JAKASAMPURNA / BEKASI BARAT',  'BEKASI',           'JAWA BARAT',       '17145','MODERN',   760.00, 580.00,'SQM','-6.2273','106.9821','2019-09-20',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','SUBURBAN','2026-01-01'),
-('Y030','CIPUTAT RAYA',          'IDN','CIPUTAT / CIPUTAT',            'TANGERANG SELATAN','BANTEN',           '15411','MODERN',   920.00, 700.00,'SQM','-6.4025','106.7963','2021-03-15',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','SUBURBAN','2026-01-01'),
-('Y040','SOEKARNO HATTA',        'IDN','BATUNUNGGAL / BANDUNG KIDUL',  'BANDUNG',          'JAWA BARAT',       '40266','MODERN',  1800.00,1300.00,'SQM','-6.8215','107.5978','2018-08-10',NULL,'IDR','HYPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-01-01'),
-('Y050','PEMUDA SEMARANG',       'IDN','KEL.PANDANSARI / SEMARANG TENGAH','SEMARANG',      'JAWA TENGAH',      '50139','MODERN',   650.00, 500.00,'SQM','-7.0124','110.4128','2022-02-28',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','URBAN', '2026-01-01'),
-('Y060','SOLO BARU',             'IDN','GROGOL / SUKOHARJO',           'SUKOHARJO',        'JAWA TENGAH',      '57552','MODERN',  1050.00, 800.00,'SQM','-7.8012','110.3647','2020-10-05',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','B','SUBURBAN','2026-01-01'),
-('Y070','IJEN BOULEVARD',        'IDN','GADING KASRI / KLOJEN',        'MALANG',           'JAWA TIMUR',       '65115','MODERN',   880.00, 670.00,'SQM','-7.9875','112.6321','2019-04-12',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-01-01'),
-('Y080','PB SUDIRMAN JEMBER',    'IDN','KEL.JEMBER LOR / PATRANG',     'JEMBER',           'JAWA TIMUR',       '68118','MODERN',   720.00, 550.00,'SQM','-8.1723','113.7031','2021-07-22',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','URBAN', '2026-01-01'),
-('Y090','KMP PRATIHITA',         'IDN','KETAPANG / KALIPURO',          'BANYUWANGI',       'JAWA TIMUR',       '68461','MODERN',   600.00, 460.00,'SQM','-8.2101','114.3696','2022-05-18',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','SUBURBAN','2026-01-01'),
-('Y100','RAYA KENONGO',          'IDN','KENONGO / TULANGAN',           'SIDOARJO',         'JAWA TIMUR',       '61273','MODERN',  1300.00, 980.00,'SQM','-7.4478','112.7183','2020-01-30',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','B','SUBURBAN','2026-01-01');
-
 -- ============================================================
--- BATCH 2: 2026-02-01
--- CHANGED: Y010 ganti channel_type MODERN→TRADITIONAL
---          Y020 ganti format MINIMARKET→SUPERMARKET + net_sales_area naik
---          Y060 ganti city/district (relokasi area)
+-- Diagnostic Queries — io_testing Pipeline
+-- Run these in sequence to verify each layer is correct.
 -- ============================================================
-INSERT INTO src_store_detail VALUES
-('Y001','CIKINI RAYA',           'IDN','KEL.CIKINI / MENTENG',         'JAKARTA PUSAT',    'DKI JAKARTA',      '10330','MODERN',  1200.00, 900.00,'SQM','-6.1754','106.8272','2020-03-01',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-02-01'),
-('Y002','CASABLANCA SELATAN',    'IDN','KEL.MENTENG DALAM / TEBET',    'JAKARTA SELATAN',  'DKI JAKARTA',      '12870','MODERN',   980.00, 750.00,'SQM','-6.2115','106.8451','2019-07-15',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-02-01'),
-('Y003','CILEDUG RAYA',          'IDN','CILEDUG / TANGERANG',          'TANGERANG',        'BANTEN',           '15157','MODERN',  1500.00,1100.00,'SQM','-6.3012','106.8124','2018-11-20',NULL,'IDR','HYPERMARKET','MALL',  'ALFAMART','A','SUBURBAN','2026-02-01'),
-('Y004','MOCH TOHA',             'IDN','PASAWAHAN / KIARACONDONG',     'BANDUNG',          'JAWA BARAT',       '40275','MODERN',   870.00, 650.00,'SQM','-6.9147','107.6098','2021-01-10',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-02-01'),
-('Y005','RAYA DARMO',            'IDN','DR.SOETOMO / TEGALSARI',       'SURABAYA',         'JAWA TIMUR',       '60264','MODERN',  2000.00,1500.00,'SQM','-7.2575','112.7521','2017-05-05',NULL,'IDR','HYPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-02-01'),
-('Y010','PURI KEMBANGAN',        'IDN','KEMBANGAN SELATAN / KEMBANGAN','JAKARTA BARAT',    'DKI JAKARTA',      '11610','TRADITIONAL',1100.00,820.00,'SQM','-6.1883','106.7652','2020-06-01',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','B','URBAN', '2026-02-01'), -- ← channel_type changed
-('Y020','KALIMALANG BARAT',      'IDN','JAKASAMPURNA / BEKASI BARAT',  'BEKASI',           'JAWA BARAT',       '17145','MODERN',   760.00, 720.00,'SQM','-6.2273','106.9821','2019-09-20',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','C','SUBURBAN','2026-02-01'), -- ← format+net_sales_area changed
-('Y030','CIPUTAT RAYA',          'IDN','CIPUTAT / CIPUTAT',            'TANGERANG SELATAN','BANTEN',           '15411','MODERN',   920.00, 700.00,'SQM','-6.4025','106.7963','2021-03-15',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','SUBURBAN','2026-02-01'),
-('Y040','SOEKARNO HATTA',        'IDN','BATUNUNGGAL / BANDUNG KIDUL',  'BANDUNG',          'JAWA BARAT',       '40266','MODERN',  1800.00,1300.00,'SQM','-6.8215','107.5978','2018-08-10',NULL,'IDR','HYPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-02-01'),
-('Y050','PEMUDA SEMARANG',       'IDN','KEL.PANDANSARI / SEMARANG TENGAH','SEMARANG',      'JAWA TENGAH',      '50139','MODERN',   650.00, 500.00,'SQM','-7.0124','110.4128','2022-02-28',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','URBAN', '2026-02-01'),
-('Y060','SOLO BARU EXTENSION',   'IDN','MADEGONDO / GROGOL',           'SUKOHARJO',        'JAWA TENGAH',      '57552','MODERN',  1050.00, 800.00,'SQM','-7.8012','110.3647','2020-10-05',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','B','SUBURBAN','2026-02-01'), -- ← description+area changed
-('Y070','IJEN BOULEVARD',        'IDN','GADING KASRI / KLOJEN',        'MALANG',           'JAWA TIMUR',       '65115','MODERN',   880.00, 670.00,'SQM','-7.9875','112.6321','2019-04-12',NULL,'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-02-01'),
-('Y080','PB SUDIRMAN JEMBER',    'IDN','KEL.JEMBER LOR / PATRANG',     'JEMBER',           'JAWA TIMUR',       '68118','MODERN',   720.00, 550.00,'SQM','-8.1723','113.7031','2021-07-22',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','URBAN', '2026-02-01'),
-('Y090','KMP PRATIHITA',         'IDN','KETAPANG / KALIPURO',          'BANYUWANGI',       'JAWA TIMUR',       '68461','MODERN',   600.00, 460.00,'SQM','-8.2101','114.3696','2022-05-18',NULL,'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','SUBURBAN','2026-02-01'),
-('Y100','RAYA KENONGO',          'IDN','KENONGO / TULANGAN',           'SIDOARJO',         'JAWA TIMUR',       '61273','MODERN',  1300.00, 980.00,'SQM','-7.4478','112.7183','2020-01-30',NULL,'IDR','SUPERMARKET','MALL',  'ALFAMART','B','SUBURBAN','2026-02-01');
 
--- ============================================================
--- BATCH 3: 2026-03-01
--- CHANGED: Y030 ganti gross_area + net_sales_area (renovasi)
---          Y040 closing_date diisi (store tutup)
---          Y080 ganti zip
--- ============================================================
-INSERT INTO src_store_detail VALUES
-('Y001','CIKINI RAYA',           'IDN','KEL.CIKINI / MENTENG',         'JAKARTA PUSAT',    'DKI JAKARTA',      '10330','MODERN',  1200.00, 900.00,'SQM','-6.1754','106.8272','2020-03-01',NULL,          'IDR','SUPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-03-01'),
-('Y002','CASABLANCA SELATAN',    'IDN','KEL.MENTENG DALAM / TEBET',    'JAKARTA SELATAN',  'DKI JAKARTA',      '12870','MODERN',   980.00, 750.00,'SQM','-6.2115','106.8451','2019-07-15',NULL,          'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-03-01'),
-('Y003','CILEDUG RAYA',          'IDN','CILEDUG / TANGERANG',          'TANGERANG',        'BANTEN',           '15157','MODERN',  1500.00,1100.00,'SQM','-6.3012','106.8124','2018-11-20',NULL,          'IDR','HYPERMARKET','MALL',  'ALFAMART','A','SUBURBAN','2026-03-01'),
-('Y004','MOCH TOHA',             'IDN','PASAWAHAN / KIARACONDONG',     'BANDUNG',          'JAWA BARAT',       '40275','MODERN',   870.00, 650.00,'SQM','-6.9147','107.6098','2021-01-10',NULL,          'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-03-01'),
-('Y005','RAYA DARMO',            'IDN','DR.SOETOMO / TEGALSARI',       'SURABAYA',         'JAWA TIMUR',       '60264','MODERN',  2000.00,1500.00,'SQM','-7.2575','112.7521','2017-05-05',NULL,          'IDR','HYPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-03-01'),
-('Y010','PURI KEMBANGAN',        'IDN','KEMBANGAN SELATAN / KEMBANGAN','JAKARTA BARAT',    'DKI JAKARTA',      '11610','TRADITIONAL',1100.00,820.00,'SQM','-6.1883','106.7652','2020-06-01',NULL,        'IDR','SUPERMARKET','MALL',  'ALFAMART','B','URBAN', '2026-03-01'),
-('Y020','KALIMALANG BARAT',      'IDN','JAKASAMPURNA / BEKASI BARAT',  'BEKASI',           'JAWA BARAT',       '17145','MODERN',   760.00, 720.00,'SQM','-6.2273','106.9821','2019-09-20',NULL,          'IDR','SUPERMARKET','STANDALONE','ALFAMART','C','SUBURBAN','2026-03-01'),
-('Y030','CIPUTAT RAYA',          'IDN','CIPUTAT / CIPUTAT',            'TANGERANG SELATAN','BANTEN',           '15411','MODERN',  1150.00, 880.00,'SQM','-6.4025','106.7963','2021-03-15',NULL,          'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','SUBURBAN','2026-03-01'), -- ← gross+net area changed
-('Y040','SOEKARNO HATTA',        'IDN','BATUNUNGGAL / BANDUNG KIDUL',  'BANDUNG',          'JAWA BARAT',       '40266','MODERN',  1800.00,1300.00,'SQM','-6.8215','107.5978','2018-08-10','2026-02-28','IDR','HYPERMARKET','MALL',  'ALFAMART','A','URBAN', '2026-03-01'), -- ← closing_date diisi
-('Y050','PEMUDA SEMARANG',       'IDN','KEL.PANDANSARI / SEMARANG TENGAH','SEMARANG',      'JAWA TENGAH',      '50139','MODERN',   650.00, 500.00,'SQM','-7.0124','110.4128','2022-02-28',NULL,          'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','URBAN', '2026-03-01'),
-('Y060','SOLO BARU EXTENSION',   'IDN','MADEGONDO / GROGOL',           'SUKOHARJO',        'JAWA TENGAH',      '57552','MODERN',  1050.00, 800.00,'SQM','-7.8012','110.3647','2020-10-05',NULL,          'IDR','SUPERMARKET','MALL',  'ALFAMART','B','SUBURBAN','2026-03-01'),
-('Y070','IJEN BOULEVARD',        'IDN','GADING KASRI / KLOJEN',        'MALANG',           'JAWA TIMUR',       '65115','MODERN',   880.00, 670.00,'SQM','-7.9875','112.6321','2019-04-12',NULL,          'IDR','SUPERMARKET','STANDALONE','ALFAMART','B','URBAN', '2026-03-01'),
-('Y080','PB SUDIRMAN JEMBER',    'IDN','KEL.JEMBER LOR / PATRANG',     'JEMBER',           'JAWA TIMUR',       '68119','MODERN',   720.00, 550.00,'SQM','-8.1723','113.7031','2021-07-22',NULL,          'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','URBAN', '2026-03-01'), -- ← zip changed
-('Y090','KMP PRATIHITA',         'IDN','KETAPANG / KALIPURO',          'BANYUWANGI',       'JAWA TIMUR',       '68461','MODERN',   600.00, 460.00,'SQM','-8.2101','114.3696','2022-05-18',NULL,          'IDR','MINIMARKET', 'STANDALONE','ALFAMART','C','SUBURBAN','2026-03-01'),
-('Y100','RAYA KENONGO',          'IDN','KENONGO / TULANGAN',           'SIDOARJO',         'JAWA TIMUR',       '61273','MODERN',  1300.00, 980.00,'SQM','-7.4478','112.7183','2020-01-30',NULL,          'IDR','SUPERMARKET','MALL',  'ALFAMART','B','SUBURBAN','2026-03-01');
+-- ── SOURCE TABLES ──────────────────────────────────────────
 
-SELECT * from dim_store
+-- How many batches and rows per batch?
+SELECT partition_time::date, COUNT(*) AS rows
+FROM public.src_sales
+GROUP BY 1 ORDER BY 1;
+
+SELECT partition_time::date, COUNT(*) AS rows
+FROM public.src_store
+GROUP BY 1 ORDER BY 1;
+
+SELECT partition_time::date, COUNT(*) AS rows
+FROM public.src_customer
+GROUP BY 1 ORDER BY 1;
+
+-- ── INTERMEDIATE ───────────────────────────────────────────
+
+-- fact_sales: total rows and date range
+SELECT COUNT(*) AS total_rows, MIN(order_date), MAX(order_date)
+FROM public.intermediate__fact_sales;
+
+-- working_initial_store: SCD2 entries
+SELECT * FROM public.intermediate__working_initial_store
+ORDER BY initial_store_code, start_date;
+
+-- ── KPI LAYER ──────────────────────────────────────────────
+
+-- Row counts per KPI model
+SELECT 'kpi_revenue'            AS model, COUNT(*) AS rows FROM public_marts_kpi.kpi_revenue
+UNION ALL
+SELECT 'kpi_orders',             COUNT(*)           FROM public_marts_kpi.kpi_orders
+UNION ALL
+SELECT 'kpi_customer_retention', COUNT(*)           FROM public_marts_kpi.kpi_customer_retention
+UNION ALL
+SELECT 'kpi_store',              COUNT(*)           FROM public_marts_kpi.kpi_store
+UNION ALL
+SELECT 'kpi_product',            COUNT(*)           FROM public_marts_kpi.kpi_product
+UNION ALL
+SELECT 'kpi_exec_summary',       COUNT(*)           FROM public_marts_kpi.kpi_exec_summary;
+
+-- Retention rate check (should be NULL for first month, value for subsequent)
+SELECT month, total_buyers, new_customers, retained_from_prev_month,
+       prev_month_buyers, retention_rate_pct, churn_rate_pct
+FROM public_marts_kpi.kpi_customer_retention
+ORDER BY month;
+
+-- Executive Summary: all months
+SELECT * FROM public_marts_kpi.kpi_exec_summary ORDER BY month;

@@ -20,7 +20,7 @@ SELECT
     s.total_amount,
     s.partition_time
 FROM {{ source('public', 'src_sales') }} s
-WHERE s.partition_time = '{{ var("raw_data_date") }}'::date
+WHERE s.partition_time <= '{{ var("raw_data_date") }}'::date
 
 {% if is_incremental() %}
 AND NOT EXISTS (

@@ -19,7 +19,7 @@ macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
 
 vars:
-  raw_data_date: "2026-01-01"
+  raw_data_date: "2026-09-01"
 
 clean-targets:         # directories to be removed by `dbt clean`
   - "target"

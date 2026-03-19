@@ -1,7 +1,4 @@
-{{ config(
-    materialized = 'incremental',
-    unique_key   = 'month'
-) }}
+{{ config(materialized='table') }}
 
 /*
   KPI: Order Volume & Basket Quality — Monthly
@@ -13,13 +10,6 @@
     - orders_mom_growth_pct     → order volume trend
     - aov_mom_change_pct        → basket size trend
     - avg_revenue_per_store     → store productivity
-
-  Materialization note:
-    Incremental (unique_key = 'month'). On the first run (or --full-refresh) the
-    entire history is built with standard window functions (LAG). On subsequent
-    runs only new months are loaded from fact_sales, and the previous-month
-    values are looked up from {{ this }} via correlated subquery — so window
-    functions are not needed and row-level correctness is preserved.
 */
 
 WITH monthly AS (
@@ -37,12 +27,6 @@ WITH monthly AS (
             SUM(quantity)::numeric / NULLIF(COUNT(DISTINCT order_id), 0)
         , 2)                                                                    AS avg_items_per_order
     FROM {{ ref('fact_sales') }}
-
-    {% if is_incremental() %}
-    -- Only process months that don't exist yet in the table
-    WHERE TO_CHAR(order_date, 'YYYY-MM') > (SELECT MAX(month) FROM {{ this }})
-    {% endif %}
-
     GROUP BY 1
 
 ),
@@ -50,45 +34,11 @@ WITH monthly AS (
 with_lag AS (
 
     SELECT
-        m.*,
-
-        {% if is_incremental() %}
-        -- In incremental mode: look up previous month values from the
-        -- already-materialized table. Avoids window functions over a
-        -- single-row CTE that would always produce NULL.
-        (
-            SELECT t.total_orders
-            FROM   {{ this }} t
-            WHERE  t.month = TO_CHAR(
-                       (m.month || '-01')::date - INTERVAL '1 month',
-                       'YYYY-MM'
-                   )
-        )                                                                       AS prev_month_orders,
-        (
-            SELECT t.avg_order_value
-            FROM   {{ this }} t
-            WHERE  t.month = TO_CHAR(
-                       (m.month || '-01')::date - INTERVAL '1 month',
-                       'YYYY-MM'
-                   )
-        )                                                                       AS prev_month_aov,
-        (
-            SELECT t.unique_buyers
-            FROM   {{ this }} t
-            WHERE  t.month = TO_CHAR(
-                       (m.month || '-01')::date - INTERVAL '1 month',
-                       'YYYY-MM'
-                   )
-        )                                                                       AS prev_month_buyers
-
-        {% else %}
-        -- In full refresh mode: standard window functions over complete history
-        LAG(total_orders)    OVER (ORDER BY month)                              AS prev_month_orders,
-        LAG(avg_order_value) OVER (ORDER BY month)                              AS prev_month_aov,
-        LAG(unique_buyers)   OVER (ORDER BY month)                              AS prev_month_buyers
-        {% endif %}
-
-    FROM monthly m
+        *,
+        LAG(total_orders)    OVER (ORDER BY month) AS prev_month_orders,
+        LAG(avg_order_value) OVER (ORDER BY month) AS prev_month_aov,
+        LAG(unique_buyers)   OVER (ORDER BY month) AS prev_month_buyers
+    FROM monthly
 
 )
 

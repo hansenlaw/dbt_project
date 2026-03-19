@@ -8,6 +8,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=githubactions&logoColor=white)
+![Metabase](https://img.shields.io/badge/Metabase-Dashboard-509EE3?logo=metabase&logoColor=white)
 
 ---
 
@@ -34,6 +35,7 @@ This project implements a production-grade analytics engineering pipeline for a 
 | Store codes change over time during rebranding | Custom SCD Type 2 using geographic coordinates as a stable identity key |
 | No unified customer view across purchases and loyalty | Mart layer combining snapshots, RFM segmentation, and lifetime value |
 | No visibility into pipeline health | Automated CI on every push + daily nightly check with Telegram alerting |
+| No consolidated view for leadership across all KPIs | KPI layer (6 dbt models) + 43-card Metabase executive dashboard across 4 tabs |
 
 The pipeline follows a three-layer architecture — **Source → Intermediate → Mart** — with each layer having clear ownership, defined materialization strategy, and automated quality guarantees.
 
@@ -51,12 +53,12 @@ flowchart TD
 
     subgraph Intermediate["⚙️ Intermediate Layer"]
         D["working_initial_store\n(Custom SCD Type 2 · Incremental/Merge)"]
-        E["fact_sales\n(Incremental/Append)"]
+        E["fact_sales\n(Incremental · filter <=)"]
         F["dim_store\n(dbt Snapshot)"]
         G["dim_sales\n(dbt Snapshot)"]
         H["dim_customer\n(dbt Snapshot)"]
-        I[active_store]
-        J[closed_store]
+        I[active_store · View]
+        J[closed_store · View]
     end
 
     subgraph Marts["📊 Mart Layer · Schema-Separated by Domain"]
@@ -68,12 +70,25 @@ flowchart TD
         P["mart_customer_profile\nschema: marts_customer"]
     end
 
+    subgraph KPI["📈 KPI Layer · schema: marts_kpi"]
+        Q[kpi_revenue]
+        R[kpi_orders]
+        S[kpi_customer_retention]
+        T[kpi_store]
+        U[kpi_product]
+        V["kpi_exec_summary\n1 row/month · all KPIs joined"]
+    end
+
     A --> D & F
     B --> E & G
     C --> H
     D --> I & J & K & L
     E --> K & L & M & N & O & P
     H --> P
+    E --> Q & R & S
+    K --> T & U
+    N --> U
+    Q & R & S & T & U --> V
 ```
 
 ---
@@ -160,21 +175,31 @@ STRING_AGG(tier, ' → ' ORDER BY dbt_valid_from) AS tier_journey
 │   └── dbt-nightly.yml         # Scheduled daily at 00:00 UTC + manual dispatch
 │
 ├── models/
-│   ├── working_initial_store.sql   # Custom SCD Type 2 (incremental/merge)
-│   ├── fact_sales.sql              # Incremental fact table (append)
-│   ├── active_store.sql            # Filtered view — active stores only
-│   ├── closed_store.sql            # Filtered view — closed stores only
-│   ├── schema.yml                  # Generic tests for intermediate models
-│   └── marts/
-│       ├── store/
-│       │   ├── mart_store_performance.sql
-│       │   └── mart_store_directory.sql
-│       ├── sales/
-│       │   ├── mart_sales_summary.sql
-│       │   ├── mart_sales_by_product.sql
-│       │   └── mart_sales_by_customer.sql   # RFM segmentation
-│       ├── customer/
-│       │   └── mart_customer_profile.sql
+│   ├── sources.yml
+│   ├── intermediate/
+│   │   ├── working_initial_store.sql   # Custom SCD Type 2 (incremental/merge)
+│   │   ├── fact_sales.sql              # Incremental fact table (append, filter <=)
+│   │   ├── active_store.sql            # View — active stores only
+│   │   ├── closed_store.sql            # View — closed stores only
+│   │   └── schema.yml
+│   ├── marts/
+│   │   ├── store/
+│   │   │   ├── mart_store_performance.sql
+│   │   │   └── mart_store_directory.sql
+│   │   ├── sales/
+│   │   │   ├── mart_sales_summary.sql
+│   │   │   ├── mart_sales_by_product.sql
+│   │   │   └── mart_sales_by_customer.sql   # RFM segmentation
+│   │   ├── customer/
+│   │   │   └── mart_customer_profile.sql
+│   │   └── schema.yml
+│   └── kpi/
+│       ├── kpi_revenue.sql              # Monthly revenue KPIs
+│       ├── kpi_orders.sql               # Monthly order & basket KPIs
+│       ├── kpi_customer_retention.sql   # Retention, churn, new vs returning
+│       ├── kpi_store.sql                # Store network performance
+│       ├── kpi_product.sql              # Product portfolio KPIs
+│       ├── kpi_exec_summary.sql         # Wide table — all KPIs joined (1 row/month)
 │       └── schema.yml
 │
 ├── snapshots/
@@ -190,15 +215,18 @@ STRING_AGG(tier, ' → ' ORDER BY dbt_valid_from) AS tier_journey
 │   └── assert_no_duplicate_active_customer.sql
 │
 ├── macros/
+│   ├── clean_id.sql / clean_name.sql / clean_email.sql
 │   ├── filter_store_by_status.sql
 │   └── tests/                   # 6 custom generic test macros
 │
 ├── script/
-│   ├── insert.sql               # Seed: src_store (6 monthly batches)
-│   ├── create_dummy_sales.sql   # Seed: src_sales (2 batches)
-│   └── create_dummy_customer.sql# Seed: src_customer (3 batches)
+│   ├── setup.sql                # ONE-SHOT: drop & recreate ALL source tables
+│   │                            #   src_sales    — 9 monthly batches (Jan–Sep 2026, 172 orders)
+│   │                            #   src_store    — 9 monthly batches (Y001–Y100, SCD code changes)
+│   │                            #   src_customer — 9 monthly batches (CUST001–CUST064, tier progressions)
+│   └── check_table.sql          # Diagnostic queries for each pipeline layer
 │
-└── dbt_project.yml
+└── dbt_project.yml              # raw_data_date default: 2026-09-01
 ```
 
 ---
@@ -245,12 +273,19 @@ io_testing:
 
 ### 4. Create the Database and Load Source Data
 
+Run `script/setup.sql` — it creates and populates **all three** source tables in one shot:
+
 ```bash
-# Create the database first in PostgreSQL, then:
-psql -U postgres -d demo_io -f script/insert.sql
-psql -U postgres -d demo_io -f script/create_dummy_sales.sql
-psql -U postgres -d demo_io -f script/create_dummy_customer.sql
+# Create the database first in PostgreSQL, then run:
+psql -U postgres -d demo_io -f script/setup.sql
 ```
+
+> **What `setup.sql` does:**
+> 1. `DROP TABLE … CASCADE` + `CREATE TABLE` for `src_sales`, `src_store`, `src_customer`
+> 2. Inserts 9 monthly batches for each table (Jan–Sep 2026)
+> 3. Prints verification queries at the end so you can confirm row counts
+>
+> Running this file resets all source tables to a clean, known state.
 
 ### 5. Install dbt Packages and Validate
 
@@ -263,46 +298,54 @@ dbt debug
 
 ## Running the Pipeline
 
-The pipeline processes data in monthly batches. Each run requires a `raw_data_date` variable specifying which batch to load.
+### Option A — Full Refresh (Recommended for First Run)
 
-### Full Pipeline — Batch 1 (2026-01-01)
+Builds everything from scratch. The `raw_data_date` variable controls how far back to load —
+set to `2026-09-01` by default, which loads all nine months (Jan–Sep) in one command.
 
 ```bash
-# Intermediate layer
-dbt run --select working_initial_store --vars '{raw_data_date: 2026-01-01}'
-dbt run --select fact_sales            --vars '{raw_data_date: 2026-01-01}'
+# Build all intermediate + mart + kpi models from scratch
+dbt run --full-refresh
 
-# Dimension snapshots
-dbt snapshot --select dim_store        --vars '{raw_data_date: 2026-01-01}'
-dbt snapshot --select dim_sales
-dbt snapshot --select dim_customer     --vars '{raw_data_date: 2026-01-01}'
-
-# Mart layer
-dbt run --select marts.*
+# Run dimension snapshots (once per batch, in order)
+dbt snapshot --vars '{raw_data_date: 2026-01-01}'   # loads Jan states
+dbt snapshot --vars '{raw_data_date: 2026-02-01}'   # detects tier/store changes in Feb
+dbt snapshot --vars '{raw_data_date: 2026-03-01}'   # Mar
+dbt snapshot --vars '{raw_data_date: 2026-04-01}'   # Apr
+dbt snapshot --vars '{raw_data_date: 2026-05-01}'   # May
+dbt snapshot --vars '{raw_data_date: 2026-06-01}'   # Jun
+dbt snapshot --vars '{raw_data_date: 2026-07-01}'   # Jul
+dbt snapshot --vars '{raw_data_date: 2026-08-01}'   # Aug
+dbt snapshot --vars '{raw_data_date: 2026-09-01}'   # Sep
 
 # Run all tests
 dbt test
 ```
 
-### Subsequent Batches
+`raw_data_date` defaults to `2026-09-01` in `dbt_project.yml`, so `dbt run --full-refresh`
+without `--vars` loads all nine months of data.
 
-Repeat with the next date. Incremental models detect and process only new records.
+### Option B — Incremental Batch Loading
+
+Process one new month at a time. Incremental models detect and append only new records.
 
 ```bash
+# For each new monthly batch, run in this order:
 dbt run --select working_initial_store --vars '{raw_data_date: 2026-02-01}'
 dbt run --select fact_sales            --vars '{raw_data_date: 2026-02-01}'
-dbt snapshot --select dim_store        --vars '{raw_data_date: 2026-02-01}'
-dbt snapshot --select dim_customer     --vars '{raw_data_date: 2026-02-01}'
-dbt run --select marts.*
+dbt snapshot                           --vars '{raw_data_date: 2026-02-01}'
+dbt run --select marts.* kpi.*
 dbt test
 ```
 
-### Build Everything at Once
+### Expected Output After Full Refresh
 
-```bash
-# dbt build = run + snapshot + test in dependency order
-dbt build --vars '{raw_data_date: 2026-01-01}'
-```
+| Model | Rows | Key Metrics |
+|---|---|---|
+| `fact_sales` | 172 | Jan(18)+Feb(16)+Mar(18)+Apr(20)+May(19)+Jun(24)+Jul(26)+Aug(24)+Sep(27) |
+| `kpi_exec_summary` | 9 | One row per month: 2026-01 through 2026-09 |
+| `kpi_customer_retention` | 9 | Retention: Jan=NULL, Feb=50%, Mar=57%, Apr=59%, May=58%, Jun=67%, Jul=67%, Aug=64%, Sep=67% |
+| `mart_store_performance` | 45 | 5 stores × 9 months |
 
 ---
 
@@ -396,7 +439,9 @@ dbt-nightly   →  Notifies on every run          (daily health confirmation)
 
 ---
 
-## Mart Catalog
+## Model Catalog
+
+### Mart Layer
 
 | Table | Schema | Consumer | Key Metrics |
 |---|---|---|---|
@@ -407,17 +452,29 @@ dbt-nightly   →  Notifies on every run          (daily health confirmation)
 | `mart_sales_by_customer` | `marts_sales` | Sales Team | RFM scores, behavioral segment, favorite product, lifespan |
 | `mart_customer_profile` | `marts_customer` | Marketing / CRM | Current tier, tier journey, lifetime value, days as customer |
 
+### KPI Layer
+
+| Table | Schema | Consumer | Key Metrics |
+|---|---|---|---|
+| `kpi_revenue` | `marts_kpi` | Finance | Total revenue, MoM growth, 3M rolling avg, cumulative revenue |
+| `kpi_orders` | `marts_kpi` | Sales / Ops | Orders, AOV, basket size, store productivity, MoM trends |
+| `kpi_customer_retention` | `marts_kpi` | CRM / Growth | New vs returning, retention rate, churn rate, buyer growth |
+| `kpi_store` | `marts_kpi` | Operations | Top/bottom store code (pre-computed via `DISTINCT ON`), revenue gap, top-3 concentration %, network MoM |
+| `kpi_product` | `marts_kpi` | Merchandising | Portfolio breadth, diversity index, top product by revenue & qty |
+| `kpi_exec_summary` | `marts_kpi` | C-Level / CEO | **All 5 KPIs FULL JOINed — 1 row per month, 40+ columns — powers the Tab 1 Executive dashboard in Metabase** |
+
 ---
 
 ## Materialization Reference
 
 | Model | Strategy | Rationale |
 |---|---|---|
-| `working_initial_store` | Incremental — merge | SCD2: close previous records, insert new versions |
-| `fact_sales` | Incremental — append | Append-only; idempotent via `NOT EXISTS` deduplication |
-| `dim_*` | Snapshot | Automated SCD2 via dbt `check` strategy |
-| `active_store`, `closed_store` | Table | Simple filter; full refresh is appropriate |
-| `mart_*` | Table | Business-ready; full rebuild guarantees correctness |
+| `working_initial_store` | Incremental — merge | SCD2: close previous records, insert new versions. Full-refresh builds complete history from all batches via `LEAD()`. |
+| `fact_sales` | Incremental — append | Filter `partition_time <=` loads all batches up to `raw_data_date`. Deduplication via `NOT EXISTS`. |
+| `dim_*` | Snapshot | Automated SCD2 via dbt `check` strategy. Run once per batch in sequence. |
+| `active_store`, `closed_store` | View | Lightweight filter on `working_initial_store`. No storage cost. |
+| `mart_*` | Table | Business-ready; full rebuild on every run guarantees correctness. |
+| `kpi_*` | Table | Rebuilt fully each run from mart layer. One row per calendar month. |
 
 ---
 

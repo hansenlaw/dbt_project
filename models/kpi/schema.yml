@@ -48,7 +48,7 @@ models:
     description: >
       Monthly order volume and basket quality KPIs. One row per calendar month.
       Tracks order frequency, average basket size, store productivity,
-      and purchase frequency per buyer.
+      and purchase frequency per buyer. Rebuilt in full on every dbt run.
     columns:
       - name: month
         description: "Calendar month in YYYY-MM format."
