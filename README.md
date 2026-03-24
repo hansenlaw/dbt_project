@@ -4,7 +4,7 @@
 
 [![dbt CI](https://github.com/hansenlaw/dbt_project/actions/workflows/dbt-ci.yml/badge.svg)](https://github.com/hansenlaw/dbt_project/actions/workflows/dbt-ci.yml)
 [![dbt Nightly](https://github.com/hansenlaw/dbt_project/actions/workflows/dbt-nightly.yml/badge.svg)](https://github.com/hansenlaw/dbt_project/actions/workflows/dbt-nightly.yml)
-![dbt](https://img.shields.io/badge/dbt-1.11-FF694B?logo=dbt&logoColor=white)
+![dbt](https://img.shields.io/badge/dbt-1.10.0-FF694B?logo=dbt&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=githubactions&logoColor=white)
@@ -28,16 +28,18 @@
 
 ## Overview
 
-This project implements a production-grade analytics engineering pipeline for a multi-branch retail company. It solves three core data challenges:
+This started with a real data problem: the retail source system assigns new store codes whenever a branch gets rebranded — `Y010` becomes `Y011` becomes `Y012` — while the physical location never moves. Standard SCD2 breaks here because there's no stable natural key coming from the source. Tracking cumulative store revenue across a rebrand became impossible with naive approaches.
 
-| Challenge | Solution |
+The fix: use latitude and longitude as the immutable identity anchor. Every downstream table that references store identity flows through this geographic surrogate key, so historical aggregations hold regardless of how many times the code has changed.
+
+That core challenge shaped the entire pipeline design. Three layers — **Source → Intermediate → Mart** — with explicit materialization choices at each stage, a two-tier data quality framework, and full CI/CD coverage. On top of that sits a KPI layer feeding a 43-card Metabase executive dashboard.
+
+| Layer | What it solves |
 |---|---|
-| Store codes change over time during rebranding | Custom SCD Type 2 using geographic coordinates as a stable identity key |
-| No unified customer view across purchases and loyalty | Mart layer combining snapshots, RFM segmentation, and lifetime value |
-| No visibility into pipeline health | Automated CI on every push + daily nightly check with Telegram alerting |
-| No consolidated view for leadership across all KPIs | KPI layer (6 dbt models) + 43-card Metabase executive dashboard across 4 tabs |
-
-The pipeline follows a three-layer architecture — **Source → Intermediate → Mart** — with each layer having clear ownership, defined materialization strategy, and automated quality guarantees.
+| Custom SCD Type 2 (intermediate) | Store code changes tracked via lat/lon — historical revenue aggregates correctly across rebrands |
+| Mart layer with snapshots | Unified customer 360°: purchase history, RFM segment, tier progression all in one table |
+| CI/CD + nightly schedule | Pipeline failures caught before dashboards break — Telegram alerts on every run |
+| KPI layer → Metabase | C-level metrics in one place: 6 domain models FULL JOINed into a single monthly summary |
 
 ---
 
@@ -478,4 +480,4 @@ dbt-nightly   →  Notifies on every run          (daily health confirmation)
 
 ---
 
-*Built as part of the Coursera Advanced Analytics Engineering track. All source data is fully synthetic.*
+*All source data in this repository is fully synthetic, generated to replicate real-world retail patterns.*
